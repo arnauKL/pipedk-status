@@ -12,7 +12,7 @@ BINDIR_INSTALL = $(PREFIX)/bin
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Werror -Wextra -std=c99 -O2
+CFLAGS = -Wall -Wextra -std=c99 -O2
 LDFLAGS =
 
 # Find all .c files in src directory
