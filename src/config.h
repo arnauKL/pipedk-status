@@ -1,34 +1,8 @@
 /* Config file for pipedk */
 
-/* 
- * slstatus clone.
- * Main goal: have more efficient slstatus.
- * - File watchers instead of polling
- * - Instantly update volume levels without polling (no clue how yet)
- * - Some way to show custom modules: music, weather, etc
- *
- * Ideas: 
- * - Fixed max-character length string: say 50 chars, something it will never extend and check bounds to avoid it going over
- */
+#define UPDATE_INTERVAL_SECS    2       // Update interval in seconds
+#define TIME_FORMAT_STR "%d/%m %H:%M"   // Datetime format string
 
-/* Definitions (should maybe belong somewhere else) */
-#define MAXLEN 100
-
-typedef struct {
-    const char s[MAXLEN];
-    int len;
-} Status;
-
-typedef struct {
-    const char m;
-    const unsigned int update_int;
-} Module;
-
-
-/* Real user config */
-
-// const Module[] modules {
-//
-// };
-
-const unsigned int update_interval_secs = 2;
+// BAT module
+#define BAT0_STATE_PATH "/sys/class/power_supply/BAT0/status"  // Filepath to BAT0 status info (Charging/Discharging)
+#define BAT0_CAPAC_PATH "/sys/class/power_supply/BAT0/capacity"  // Filepath to BAT0 capacity (charge percentage)

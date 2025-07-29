@@ -1,33 +1,99 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h> // C sleep function
+#include <unistd.h>         // C sleep function
+#include <sys/inotify.h>    // File watchers (inode notify, linux only)
 #include "config.h"
+
+
+// TODO: File watchers instead of polling
+// TODO: Instantly update volume levels without polling (no clue how yet)
+// TODO: Some way to show custom modules: music, weather, etc
+
+
+/********************************************
+ * DEFINITIONS
+ *********************************************/
 
 #define NUM_MODULES     (sizeof(modules)/sizeof(modules[0]))    // shortcut
 #define MAX_LEN_MODULE  64                                      // Seems reasonable
 #define MAX_LEN_OTUPUT  256                                     //   "       "
 
-/*** MODULE DEFINITIONS ***/ // maybe move to its own file in the future
-
 // Create "moudle_fn" function pointer for each module
 typedef void (*module_fn)(char* buf, size_t size);  // now "module_fn fn_name" is equivalent to void (*fn_name)(char* buf, size_t size)
 
+
+/*********************************************
+ * MODULE FUNCTIONS
+ **********************************************/
+
 void mod_time(char *buf, size_t size) {
+    // Format current time
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
-    strftime(buf, size, "%d/%m %H:%M", t);
+    strftime(buf, size, TIME_FORMAT_STR, t);
 }
+
+void  mod_bat(char *buf, size_t size) {
+    // Format battery level and charging status
+    // First Capacity
+    FILE *fBAT = fopen(BAT0_CAPAC_PATH, "r");
+
+    if (fBAT == NULL) {
+        strcpy(buf, "BAT0 couldn't open");  // Print the error instead of the info
+    }
+    else {
+        strncpy(buf, "BAT0: ", MAX_LEN_MODULE);
+
+        char tmp[MAX_LEN_MODULE];
+        fgets(tmp, MAX_LEN_MODULE, fBAT);
+        const int len = strlen(tmp);
+        if (len > 0) {
+            tmp[len - 1] = '\0';    // Remove "\n"
+        }
+        strncat(buf, tmp, MAX_LEN_MODULE);
+        strncat(buf, "%", MAX_LEN_MODULE);
+        fclose(fBAT);
+    }
+
+    // Add status info (Charging,  Discharging)
+    fBAT = fopen(BAT0_STATE_PATH, "r");
+    if (fBAT == NULL) {
+        strncpy(buf, "BAT0 state file error", MAX_LEN_MODULE);
+    }
+    else {
+        // Append character
+        switch (fgetc(fBAT)) {
+            case 'C':
+                strncat(buf, "+", MAX_LEN_MODULE);
+                break;
+            case 'D':
+                strncat(buf, "-", MAX_LEN_MODULE);
+                break;
+            default:
+                strncat(buf, "F", MAX_LEN_MODULE);  // F for "Full"
+                break;
+        }
+
+        fclose(fBAT);
+    }
+}
+
 
 // void mod_cpu(char *buf, size_t size) { /* ... */ }
 // void mod_mem(char *buf, size_t size) { /* ... */ }
 
-// Define the array of mdules to be used
-// module_fn modules[] = { mod_time, mod_cpu, mod_mem };
-module_fn modules[] = { mod_time };
+/********************************************
+ * MODULE CONFIG
+ *********************************************/
+module_fn modules[] = { mod_bat, mod_time };
 
+
+/*******************************************
+ * CORE LOGIC 
+ ********************************************/
 void build_status(char *out, size_t size) {
-// Function to build the status string from all the different modules selected in the "modules" array
+    // Function to build the status string from all the different modules selected in the "modules" array
 
     char tmp[MAX_LEN_MODULE];
     out[0] = '\0';  // Output string
@@ -48,10 +114,14 @@ void build_status(char *out, size_t size) {
     }
 }
 
-void setStatus(Status stat) {
-    printf("%s\n", stat.s);
+void setStatus(const char* stat) {
+    printf("%s\n", stat);
     fflush(stdout);
 }
+
+/*******************************************
+ * UTILS
+ ********************************************/
 
 void printCorrectUsage() {
     printf("Wrong input arguments\n");
@@ -59,6 +129,9 @@ void printCorrectUsage() {
     printf("\toptions: \"-v\": print version and exit\n");
 }
 
+/*******************************************
+ * MAIN
+ ********************************************/
 int main(int argc, char *argv[]) {
 
     /* Input args */
@@ -71,16 +144,22 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    Status st = { 
-        .s = "",
-        .len = 0, // 0 chars
-    };
+    /* Initialisation */
+    const char status_string[MAX_LEN_OTUPUT] = "";
+
+    // File watchers
+    int fd = inotify_init();
+    if (fd < 0) {
+        perror("inotify_init");
+        return -1;
+    }
+
 
     /* Main loop */
     while (1) {
-        build_status(st.s, sizeof(st.s));
-        setStatus(st);
-        sleep(update_interval_secs);
+        build_status(status_string, sizeof(status_string));
+        setStatus(status_string);
+        sleep(UPDATE_INTERVAL_SECS);
     }
 
     return 0;
