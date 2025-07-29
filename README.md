@@ -7,7 +7,7 @@
 ## Motivation
 
 Audio information wasn't displaying properly with [`slstatus`](https://tools.suckless.org/slstatus/), and [`dwm-blocks`](https://github.com/torrinfail/dwmblocks) felt overly complex for my needs.
-This project is also an excuse to learn about signals and practice writing C.
+This project is also an excuse to learn about linux, signals and practice writing C.
 
 ## Usage
 
@@ -18,17 +18,9 @@ It should also work with `dwm` as long as it reads status text from `stdout`.
 pipedk | dwl
 ```
 
-## Building
-
-On Linux:
-
-```bash
-make
-```
-
-
 ## Todos
 
-- [ ] Battery info
+- [x] Battery info
 - [ ] Sound (volume) info
 - [ ] CPU info
+- [ ] Use file watchers instead of polling at fixed interval
