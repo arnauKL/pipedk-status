@@ -1,26 +1,41 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>         // C sleep function
 #include <sys/inotify.h>    // File watchers (inode notify, linux only)
+#include "piped.h"
 #include "config.h"
-
 
 // TODO: File watchers instead of polling
 // TODO: Instantly update volume levels without polling (no clue how yet)
 // TODO: Some way to show custom modules: music, weather, etc
 
+/*******************************************
+ * UTILS
+ ********************************************/
 
-/********************************************
- * DEFINITIONS
- *********************************************/
+void printCorrectUsage() {
+    printf("Wrong input arguments\n");
+    printf("usage: pipedk [OPTIONS]\n");
+    printf("\toptions: \"-v\": print version and exit\n");
+}
 
-#define NUM_MODULES     (sizeof(modules)/sizeof(modules[0]))    // shortcut
-#define MAX_LEN_MODULE  64                                      // Seems reasonable
-#define MAX_LEN_OTUPUT  256                                     //   "       "
+void checkBatteryWarning(char *tmp) {
+    long batteryLevel = strtol(tmp, NULL, 10);
+    FILE *fTmp = fopen(TMP_BAT_WARNING_FILE, "r");
 
-// Create "moudle_fn" function pointer for each module
-typedef void (*module_fn)(char* buf, size_t size);  // now "module_fn fn_name" is equivalent to void (*fn_name)(char* buf, size_t size)
+    if (fTmp == NULL && BAT_WARNING_LEVEL >= batteryLevel) {
+        system("notify-send 'LOW BATTERY' 'Battery below threshold, please charge'");
+        fTmp = fopen(TMP_BAT_WARNING_FILE, "w");  // reassign to write
+    } else if (fTmp != NULL && BAT_WARNING_LEVEL < batteryLevel) {
+        remove(TMP_BAT_WARNING_FILE);
+    }
+
+    if (fTmp != NULL) {
+        fclose(fTmp);
+    }
+}
 
 
 /*********************************************
@@ -53,6 +68,9 @@ void  mod_bat(char *buf, size_t size) {
         }
         strncat(buf, tmp, MAX_LEN_MODULE);
         strncat(buf, "%", MAX_LEN_MODULE);
+
+        checkBatteryWarning(tmp);
+
         fclose(fBAT);
     }
 
@@ -71,7 +89,7 @@ void  mod_bat(char *buf, size_t size) {
                 strncat(buf, "-", MAX_LEN_MODULE);
                 break;
             default:
-                strncat(buf, "F", MAX_LEN_MODULE);  // F for "Full"
+                strncat(buf, "o", MAX_LEN_MODULE);  // F for "Full"
                 break;
         }
 
@@ -79,14 +97,11 @@ void  mod_bat(char *buf, size_t size) {
     }
 }
 
+// void mod_audio(char *buf, size_t size) {
 
+// }
 // void mod_cpu(char *buf, size_t size) { /* ... */ }
 // void mod_mem(char *buf, size_t size) { /* ... */ }
-
-/********************************************
- * MODULE CONFIG
- *********************************************/
-module_fn modules[] = { mod_bat, mod_time };
 
 
 /*******************************************
@@ -98,6 +113,7 @@ void build_status(char *out, size_t size) {
     char tmp[MAX_LEN_MODULE];
     out[0] = '\0';  // Output string
 
+    strncat(out, " ", size - strlen(out) - 1);
     for (int i = 0; i < NUM_MODULES; ++i) {
         // Call the function and pass the buffer and its size_t
         modules[i](tmp, sizeof(tmp));
@@ -119,15 +135,6 @@ void setStatus(const char* stat) {
     fflush(stdout);
 }
 
-/*******************************************
- * UTILS
- ********************************************/
-
-void printCorrectUsage() {
-    printf("Wrong input arguments\n");
-    printf("usage: pipedk [OPTIONS]\n");
-    printf("\toptions: \"-v\": print version and exit\n");
-}
 
 /*******************************************
  * MAIN
