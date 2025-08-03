@@ -20,7 +20,7 @@ pipedk | dwl
 
 ## Todos
 
-- [x] Battery info
+- [ ] Battery info
 - [ ] Sound (volume) info
 - [ ] CPU info
 - [ ] Use file watchers instead of polling at fixed interval
