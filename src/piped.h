@@ -17,8 +17,8 @@
 // Create "moudle_fn" function pointer for each module
 typedef void (*module_fn)(char* buf, size_t size);  // now "module_fn fn_name" is equivalent to void (*fn_name)(char* buf, size_t size)
 
-// Modules
-void mod_time(char *buf, size_t size);
-void mod_bat(char *buf, size_t size);
+// Module-updating function declarations
+void update_date(char *ptr, int len);
+void update_time(char *ptr, int len);
 
 #endif // PIPED_H_

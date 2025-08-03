@@ -43,7 +43,7 @@ install: $(PROJECT)
 uninstall:
 	rm -f $(BINDIR_INSTALL)/$(PROJECT)
 
-# Clean build files
+# rm .o directory and executable
 clean:
 	rm -rf $(OBJDIR)
 	rm $(PROJECT)
