@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>         // C sleep function
+#include <sys/inotify.h>
 #include <time.h>
 #include "piped.h"
 #include "config.h"
@@ -17,7 +18,6 @@ void printFull(const char* string, int len) {
     printf("\n");
     return;
 }
-
 
 struct module_ptr {
     char *start;        // Pointer to first mutable char
@@ -42,6 +42,35 @@ static struct module_ptr modules[] = {
     { status_bar + 23, 6, update_time },             // "00:00"
 };
 
+static int inotify_fd;
+static int capacity_wd, status_wd;  // watch descriptors
+
+// Main
+int main(int argc, char *argv[]) {
+
+    if (init_inotify() < 0) {
+        perror("inotify error");
+        return -1;
+    }
+
+    // Date will be onlly set at startup
+    modules[0].update(modules[0].start, modules[0].len);
+    
+    /* Main loop */
+    while (1) {
+        modules[1].update(modules[1].start, modules[1].len);    // Time module
+        printf("%s\n", status_bar);
+        fflush(stdout);
+        sleep(UPDATE_INTERVAL_SECS);
+    }
+
+    close(inotify_fd);
+    return 0;
+}
+
+
+
+// -----------------------------
 
 // Module-updating function definitions (declared in piped.h)
 void update_time (char *ptr, int len){
@@ -68,20 +97,24 @@ void update_date(char *ptr, int len){
     return;
 } 
 
+// Utility functions
+// init inotify and handle errors
+int init_inotify(void) {
+    inotify_fd = inotify_init1(IN_NONBLOCK);  // Non-blocking
 
-// Main
-int main(int argc, char *argv[]) {
-
-    // Date will be onlly set at startup
-    modules[0].update(modules[0].start, modules[0].len);
-    
-    /* Main loop */
-    while (1) {
-        modules[1].update(modules[1].start, modules[1].len);    // Time module
-        printf("%s\n", status_bar);
-        fflush(stdout);
-        sleep(UPDATE_INTERVAL_SECS);
+    if (inotify_fd == -1) {
+        perror("inotify_init1");
+        return -1;
     }
-
+    
+    /* Watch battery files for modifications */
+    capacity_wd = inotify_add_watch(inotify_fd, BAT0_CAPAC_PATH, IN_MODIFY);
+    status_wd = inotify_add_watch(inotify_fd, BAT0_STATE_PATH, IN_MODIFY);
+    
+    if (capacity_wd < 0 || status_wd < 0) {
+        perror("inotify_add_watch");
+        return -1;
+    }
+    
     return 0;
 }
