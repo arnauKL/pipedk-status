@@ -9,6 +9,8 @@
 Audio information wasn't displaying properly with [`slstatus`](https://tools.suckless.org/slstatus/), and [`dwm-blocks`](https://github.com/torrinfail/dwmblocks) felt overly complex for my needs.
 This project is also an excuse to learn about linux, signals and practice writing C.
 
+UPDATE: `inotify` does not notify about file changes in /sys files bcs they are not real files, which throws off what I was trying to achieve with file watchers. Still learned a bunch though.
+
 ## Usage
 
 `pipedk` outputs status bar information to `stdout`. This output should be piped into `dwl` (requires the [`dwl-bar`](https://codeberg.org/dwl/dwl-patches/src/branch/main/patches/bar) patch).
@@ -20,7 +22,7 @@ pipedk | dwl
 
 ## Todos
 
-- [ ] Battery info
+- [x] Battery info
 - [ ] Sound (volume) info
 - [ ] CPU info
-- [ ] Use file watchers instead of polling at fixed interval
+- [ ] music module
