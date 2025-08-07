@@ -9,18 +9,12 @@
  *********************************************/
 
 #define NUM_MODULES    (sizeof(modules) / sizeof(modules[0])) // shortcut
-#define MAX_LEN_MODULE 64                                     // Seems reasonable
 #define MAX_LEN_OTUPUT 256                                    //   "       "
 
-// Create "moudle_fn" function pointer for each module
-typedef void (*module_fn)(
-    char *buf, size_t size); // now "module_fn fn_name" is equivalent to void (*fn_name)(char* buf, size_t size)
-
 // Module-updating function declarations
-void update_date(char *ptr, int len);
-void update_time(char *ptr, int len);
-void update_battery_percent(char *ptr, int len);
-void update_bat_level(char *ptr, int len);
-void update_power_now(char *ptr, int len);
+void update_date(char *ptr, const int len);
+void update_time(char *ptr, const int len);
+void update_bat_level(char *ptr, const int len);
+void update_power_now(char *ptr, const int len);
 
 #endif // PIPED_H_

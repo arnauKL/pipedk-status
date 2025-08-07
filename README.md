@@ -26,3 +26,14 @@ pipedk | dwl
 - [ ] Sound (volume) info
 - [ ] CPU info
 - [ ] music module
+
+## Results agains slstatus
+
+Results checked using `perf stat program_name`
+
+Key Performance Differences
+- CPU Efficiency (~39% less CPU time):
+    * pipedk: 18.53 ms task-clock
+    * slstatus: 30.54 ms task-clock 
+
+- Memory Usage is the same
