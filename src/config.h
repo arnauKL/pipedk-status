@@ -20,4 +20,6 @@
 #define BAT0_STATE_PATH "/sys/class/power_supply/BAT0/status"   // Filepath to BAT0 status info (Charging/Discharging)
 #define BAT0_CAPAC_PATH "/sys/class/power_supply/BAT0/capacity" // Filepath to BAT0 capacity (charge percentage)
 
+#define WATTS_PATH "/sys/class/power_supply/BAT0/power_now"
+
 #endif // !CONFIG_H_

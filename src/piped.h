@@ -20,4 +20,7 @@ typedef void (*module_fn)(
 void update_date(char *ptr, int len);
 void update_time(char *ptr, int len);
 void update_battery_percent(char *ptr, int len);
+void update_bat_level(char *ptr, int len);
+void update_power_now(char *ptr, int len);
+
 #endif // PIPED_H_
