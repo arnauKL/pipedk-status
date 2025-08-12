@@ -12,7 +12,7 @@
 #define NUM_MODULES    (sizeof(modules) / sizeof(modules[0])) // shortcut
 #define MAX_LEN_OTUPUT 256                                    // Seems reasonable
 
-#define UPDATE_INTERVAL_SECS 10      // Update interval in seconds
+#define UPDATE_INTERVAL_SECS 6       // Update interval in seconds
 #define DATE_FORMAT_STR      "%d/%m" // Date format string
 #define TIME_FORMAT_STR      "%H:%M" // Date format string
 

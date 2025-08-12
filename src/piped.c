@@ -22,10 +22,10 @@ static char status_bar[MAX_LEN_OTUPUT] = "00.00W | BAT0: 00% | 00/00 - 00:00";
 
 static struct module_ptr modules[] = {
     // { status_bar + padding,  n_chars, fn_pointer },
-    {status_bar + DATE_OFFSET, 6, update_date},           // "00/00"
-    {status_bar + TIME_OFFSET, 6, update_time},           // "00:00"
-    {status_bar + BAT_LEVEL_OFFSET, 3, update_bat_level}, // "00%"
-    {status_bar + POWER_OFFSET, 6, update_power_now},     // "00.00W"
+    {status_bar + DATE_OFFSET, 5, update_date},           // "00/00"
+    {status_bar + TIME_OFFSET, 5, update_time},           // "00:00"
+    {status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level}, // "00%"
+    {status_bar + POWER_OFFSET, 5, update_power_now},     // "00.00W"
 };
 
 // -------------------------------
@@ -46,6 +46,7 @@ int main() {
         modules[3].update(modules[3].start, modules[3].len);
 
         printf("%s\n", status_bar);
+
         fflush(stdout);
         sleep(UPDATE_INTERVAL_SECS);
     }
@@ -60,45 +61,53 @@ void update_time(char *ptr, const int len) {
     // Set chars for time (hour and minute)
     time_t     now = time(NULL);
     struct tm *t   = localtime(&now);
-    strftime(ptr, len, TIME_FORMAT_STR, t);
+    strftime(ptr, len + 1, TIME_FORMAT_STR, t);
 
-    *(ptr + len - 1) = ' '; // strftime adds null terminator, reomve it
+    *(ptr + len) = ' '; // strftime adds null terminator, reomve it
 }
 
 void update_date(char *ptr, int const len) {
     // Set chars for date (day and month)
     time_t     now = time(NULL);
     struct tm *t   = localtime(&now);
-    strftime(ptr, len, DATE_FORMAT_STR, t);
+    strftime(ptr, len + 1, DATE_FORMAT_STR, t);
 
-    *(ptr + len - 1) = ' '; // strftime adds null terminator, reomve it
+    *(ptr + len) = ' '; // strftime adds null terminator, reomve it
 }
 
 void update_power_now(char *ptr, const int len) {
-    static FILE *f = NULL;
-    if (!f) { f = fopen(WATTS_PATH, "r"); }
-    if (f) {
-        unsigned long uwatts = 0;
-        fscanf(f, "%lu", &uwatts);
-        rewind(f);
+    // Read 'power_now' file
+    FILE *fPow = fopen(WATTS_PATH, "r");
 
-        double watts = uwatts / 1000000.0; // uW to W
-        snprintf(ptr, len, "%5.2fW", watts);
-        *(ptr + len - 1) = 'W';
+    if (!fPow) {
+        perror("power_now");
+        return;
     }
+
+    unsigned long uwatts = 0;
+    fscanf(fPow, "%lu", &uwatts);
+    fclose(fPow);
+
+    double watts = uwatts / 1000000.0; // uW to W
+    snprintf(ptr, len + 1, "%5.2fW", watts);
+    *(ptr + len) = 'W';
 }
 
 void update_bat_level(char *ptr, const int len) {
-    static FILE *f = NULL;
-    if (!f) { f = fopen(BAT0_CAPAC_PATH, "r"); }
-    if (f) {
-        // Read battery percentage
-        int percent = 0;
+    // Read battery percentage
+    FILE *fCap = fopen(BAT0_CAPAC_PATH, "r");
 
-        fscanf(f, "%d", &percent);
-        rewind(f);
-
-        snprintf(ptr, len, "%2d", percent);
-        *(ptr + len - 1) = '%';
+    if (!fCap) {
+        perror("power_now");
+        return;
     }
+
+    int percent = 0;
+
+    fscanf(fCap, "%d", &percent);
+
+    snprintf(ptr, len + 1, "%2d", percent);
+    *(ptr + len) = '%';
+
+    fclose(fCap);
 }
