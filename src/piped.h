@@ -14,6 +14,7 @@
 // Module-updating function declarations
 void update_date(char *ptr, const int len);
 void update_time(char *ptr, const int len);
+void update_mins(char *ptr, const int len);
 void update_bat_level(char *ptr, const int len);
 void update_power_now(char *ptr, const int len);
 

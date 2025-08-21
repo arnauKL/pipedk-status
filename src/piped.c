@@ -10,22 +10,22 @@ struct module_ptr {
     void (*update)(char *ptr, const int len); // Function to update this region
 };
 
-static char status_bar[MAX_LEN_OTUPUT] = "00.00W | BAT0: 00% | 00/00 - 00:00 |  ";
-//                                        ^^^^^          ^^%   ^^^^^   ^^^^^
-//                                        power       battery%  date   time
+static char status_string[MAX_LEN_OTUPUT] = "00.00W | BAT0: 00% | 0000' |  ";
+//                                        ^^^^^          ^^%      ^^^^
+//                                        power       battery%    mins remaining
 
 // Yup, manually set, maybe some C macro could do this, idk
 #define POWER_OFFSET     0
 #define BAT_LEVEL_OFFSET 15
-#define DATE_OFFSET      21
-#define TIME_OFFSET      29
+#define MINS_OFFSET      21
 
 static struct module_ptr modules[] = {
     // { status_bar + padding,  n_chars, fn_pointer },
-    {status_bar + DATE_OFFSET, 5, update_date},           // "00/00"
-    {status_bar + TIME_OFFSET, 5, update_time},           // "00:00"
-    {status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level}, // "00%"
-    {status_bar + POWER_OFFSET, 5, update_power_now},     // "00.00W"
+    // {status_bar + DATE_OFFSET, 5, update_date},           // "00/00"
+    // {status_bar + TIME_OFFSET, 5, update_time},           // "00:00"
+    {status_string + MINS_OFFSET, 4, update_mins},           // "00:00"
+    {status_string + BAT_LEVEL_OFFSET, 2, update_bat_level}, // "00%"
+    {status_string + POWER_OFFSET, 5, update_power_now},     // "00.00W"
 };
 
 // -------------------------------
@@ -33,19 +33,17 @@ static struct module_ptr modules[] = {
 // Main
 int main() {
 
-    // Date will be onlly set at startup
-    modules[0].update(modules[0].start, modules[0].len);
-
     /* Main loop */
     while (1) {
 
-        // Time module
-        modules[1].update(modules[1].start, modules[1].len);
+        // time module
+        modules[0].update(modules[0].start, modules[0].len);
         // Battery module
+        modules[1].update(modules[1].start, modules[1].len);
+        // power module
         modules[2].update(modules[2].start, modules[2].len);
-        modules[3].update(modules[3].start, modules[3].len);
 
-        printf("%s\n", status_bar);
+        printf("%s\n", status_string);
 
         fflush(stdout);
         sleep(UPDATE_INTERVAL_SECS);
@@ -64,6 +62,16 @@ void update_time(char *ptr, const int len) {
     strftime(ptr, len + 1, TIME_FORMAT_STR, t);
 
     *(ptr + len) = ' '; // strftime adds null terminator, reomve it
+}
+
+void update_mins(char *ptr, const int len) {
+    // Set chars for remaining minutes in the day
+    time_t     now  = time(NULL);
+    struct tm *t    = localtime(&now);
+    int        mins = 1440 - (t->tm_hour * 60 + t->tm_min); // Find remaining mins in a day
+    sprintf(ptr, "%4d", mins);
+
+    *(ptr + len) = '\''; // sprintf adds null terminator, reomve it
 }
 
 void update_date(char *ptr, int const len) {
