@@ -10,7 +10,7 @@ struct module_ptr {
     void (*update)(char *ptr, const int len); // Function to update this region
 };
 
-static char status_bar[MAX_LEN_OTUPUT] = "00.00W | BAT0: 00% | 00/00 - 00:00";
+static char status_bar[MAX_LEN_OTUPUT] = "00.00W | BAT0: 00% | 00/00 - 00:00 |  ";
 //                                        ^^^^^          ^^%   ^^^^^   ^^^^^
 //                                        power       battery%  date   time
 
