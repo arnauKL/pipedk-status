@@ -39,11 +39,9 @@ int main() {
     /* Main loop */
     while (1) {
 
-        // Time module
-        modules[1].update(modules[1].start, modules[1].len);
-        // Battery module
-        modules[2].update(modules[2].start, modules[2].len);
-        modules[3].update(modules[3].start, modules[3].len);
+        for (int i = 1; i < NUM_MODULES; i++) {
+            modules[i].update(modules[i].start, modules[i].len);
+        }
 
         printf("%s\n", status_bar);
 
