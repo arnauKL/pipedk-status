@@ -10,14 +10,14 @@ struct module_ptr {
     void (*update)(char *ptr, const int len); // Function to update this region
 };
 
-static char status_string[MAX_LEN_OTUPUT] = "00.00W | BAT0: 00% | 0000' |  ";
-//                                        ^^^^^          ^^%      ^^^^
-//                                        power       battery%    mins remaining
+static char status_string[MAX_LEN_OTUPUT] = " 00.00W | BAT0: 00% | 0000' |   ";
+//                                            ^^^^^          ^^%   ^^^^
+//                                            power       battery%    mins remaining
 
 // Yup, manually set, maybe some C macro could do this, idk
-#define POWER_OFFSET     0
-#define BAT_LEVEL_OFFSET 15
-#define MINS_OFFSET      21
+#define POWER_OFFSET     1
+#define BAT_LEVEL_OFFSET 16
+#define MINS_OFFSET      22
 
 static struct module_ptr modules[] = {
     // { status_bar + padding,  n_chars, fn_pointer },
