@@ -1,7 +1,7 @@
 #include "config.h"
 #include <stdio.h>
 #include <time.h>
-#include <unistd.h> // C sleep function
+#include <unistd.h>
 
 #define NUM_MODULES (sizeof(modules) / sizeof(modules[0])) // shortcut
 
@@ -19,10 +19,10 @@ struct module_ptr {
 };
 
 static char status_bar[] = " VOL: 000% | 00.00W | BAT0: 00% | 00/00 - 00:00 |  ";
-//                                    ^^    ^^^^^          ^^%   ^^^^^   ^^^^^
-//                             amixer vol%    power(W)    battery%  date   time
+//                                 ^^    ^^^^^          ^^%   ^^^^^   ^^^^^
+//                        amixer vol%    power(W)    battery%  date   time
 
-// Yup, manually set, maybe some C macro could do this, idk
+// Manually set, maybe some C macro could do this, idk
 #define VOL_OFFSET       6
 #define POWER_OFFSET     13
 #define BAT_LEVEL_OFFSET 28
@@ -43,7 +43,6 @@ static struct module_ptr modules[] = {
 // Main
 int main() {
 
-    // Date will be onlly set at startup
     modules[0].update(modules[0].start, modules[0].len);
 
     /* Main loop */
@@ -72,6 +71,16 @@ void update_time(char *ptr, const int len) {
     strftime(ptr, len + 1, TIME_FORMAT_STR, t);
 
     *(ptr + len) = ' '; // strftime adds null terminator, reomve it
+}
+
+void update_mins(char *ptr, const int len) {
+    // Set chars for remaining minutes in the day
+    time_t     now  = time(NULL);
+    struct tm *t    = localtime(&now);
+    int        mins = 1440 - (t->tm_hour * 60 + t->tm_min); // Find remaining mins in a day
+    sprintf(ptr, "%4d", mins);
+
+    *(ptr + len) = '\''; // sprintf adds null terminator, reomve it
 }
 
 void update_date(char *ptr, int const len) {
