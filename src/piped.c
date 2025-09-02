@@ -18,7 +18,7 @@ struct module_ptr {
     void (*update)(char *ptr, const int len); // Function to update this region
 };
 
-static char status_bar[] = " VOL: 000% | 00.00W | BAT0: 00% | 00/00 - 00:00 |  ";
+static char status_bar[] = " VOL: ---% | --.--W | BAT0: --% | 00/00 - 00:00 |  ";
 //                                 ^^    ^^^^^          ^^%   ^^^^^   ^^^^^
 //                        amixer vol%    power(W)    battery%  date   time
 
