@@ -1,8 +1,16 @@
-#include "piped.h"
 #include "config.h"
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h> // C sleep function
+
+#define NUM_MODULES (sizeof(modules) / sizeof(modules[0])) // shortcut
+
+// Module-updating function declarations
+void update_date(char *ptr, const int len);
+void update_time(char *ptr, const int len);
+void update_bat_level(char *ptr, const int len);
+void update_power_now(char *ptr, const int len);
+void update_volume(char *ptr, const int len);
 
 struct module_ptr {
     char *start;                              // Pointer to first mutable char
@@ -10,16 +18,16 @@ struct module_ptr {
     void (*update)(char *ptr, const int len); // Function to update this region
 };
 
-static char status_bar[] = " master: 000% | 00.00W | BAT0: 00% | 00/00 - 00:00 |  ";
+static char status_bar[] = " VOL: 000% | 00.00W | BAT0: 00% | 00/00 - 00:00 |  ";
 //                                    ^^    ^^^^^          ^^%   ^^^^^   ^^^^^
 //                             amixer vol%    power(W)    battery%  date   time
 
 // Yup, manually set, maybe some C macro could do this, idk
-#define VOL_OFFSET       9
-#define POWER_OFFSET     16
-#define BAT_LEVEL_OFFSET 31
-#define DATE_OFFSET      37
-#define TIME_OFFSET      45
+#define VOL_OFFSET       6
+#define POWER_OFFSET     13
+#define BAT_LEVEL_OFFSET 28
+#define DATE_OFFSET      34
+#define TIME_OFFSET      42
 
 static struct module_ptr modules[] = {
     // { status_bar + padding,  n_chars, fn_pointer },
@@ -113,7 +121,7 @@ void update_bat_level(char *ptr, const int len) {
 }
 
 void update_volume(char *ptr, const int len) {
-    static int  update_counter = 0;
+    static int  update_counter = 1;
     static char vol[5]         = "N/A%";
 
     if (update_counter++ % 5 == 0) {
