@@ -1,8 +1,16 @@
-#include "piped.h"
 #include "config.h"
 #include <stdio.h>
 #include <time.h>
-#include <unistd.h> // C sleep function
+#include <unistd.h>
+
+#define NUM_MODULES (sizeof(modules) / sizeof(modules[0])) // shortcut
+
+// Module-updating function declarations
+void update_date(char *ptr, const int len);
+void update_time(char *ptr, const int len);
+void update_bat_level(char *ptr, const int len);
+void update_power_now(char *ptr, const int len);
+void update_volume(char *ptr, const int len);
 
 struct module_ptr {
     char *start;                              // Pointer to first mutable char
@@ -10,22 +18,24 @@ struct module_ptr {
     void (*update)(char *ptr, const int len); // Function to update this region
 };
 
-static char status_string[MAX_LEN_OTUPUT] = "00.00W | BAT0: 00% | 0000' |  ";
-//                                        ^^^^^          ^^%      ^^^^
-//                                        power       battery%    mins remaining
+static char status_bar[] = " VOL: 000% | 00.00W | BAT0: 00% | 00/00 - 00:00 |  ";
+//                                 ^^    ^^^^^          ^^%   ^^^^^   ^^^^^
+//                        amixer vol%    power(W)    battery%  date   time
 
-// Yup, manually set, maybe some C macro could do this, idk
-#define POWER_OFFSET     0
-#define BAT_LEVEL_OFFSET 15
-#define MINS_OFFSET      21
+// Manually set, maybe some C macro could do this, idk
+#define VOL_OFFSET       6
+#define POWER_OFFSET     13
+#define BAT_LEVEL_OFFSET 28
+#define DATE_OFFSET      34
+#define TIME_OFFSET      42
 
 static struct module_ptr modules[] = {
     // { status_bar + padding,  n_chars, fn_pointer },
-    // {status_bar + DATE_OFFSET, 5, update_date},           // "00/00"
-    // {status_bar + TIME_OFFSET, 5, update_time},           // "00:00"
-    {status_string + MINS_OFFSET, 4, update_mins},           // "00:00"
-    {status_string + BAT_LEVEL_OFFSET, 2, update_bat_level}, // "00%"
-    {status_string + POWER_OFFSET, 5, update_power_now},     // "00.00W"
+    {status_bar + DATE_OFFSET, 5, update_date},           // "00/00"
+    {status_bar + TIME_OFFSET, 5, update_time},           // "00:00"
+    {status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level}, // "00%"
+    {status_bar + POWER_OFFSET, 5, update_power_now},     // "00.00W"
+    {status_bar + VOL_OFFSET, 4, update_volume},
 };
 
 // -------------------------------
@@ -33,14 +43,16 @@ static struct module_ptr modules[] = {
 // Main
 int main() {
 
+    modules[0].update(modules[0].start, modules[0].len);
+
     /* Main loop */
     while (1) {
 
-        // update string with modules[]
-        for (int i = 0; i < NUM_MODULES; i++)
+        for (int i = 1; i < NUM_MODULES; i++) {
             modules[i].update(modules[i].start, modules[i].len);
+        }
 
-        printf("%s\n", status_string);
+        printf("%s\n", status_bar);
 
         fflush(stdout);
         sleep(UPDATE_INTERVAL_SECS);
@@ -115,4 +127,24 @@ void update_bat_level(char *ptr, const int len) {
     *(ptr + len) = '%';
 
     fclose(fCap);
+}
+
+void update_volume(char *ptr, const int len) {
+    static int  update_counter = 1;
+    static char vol[5]         = "N/A%";
+
+    if (update_counter++ % 5 == 0) {
+
+        FILE *fVol = popen("amixer sget Master | awk -F'[][]' 'END{print $2}'", "r");
+        if (!fVol) {
+            perror("volume");
+            return;
+        }
+
+        fscanf(fVol, "%s", vol);
+        pclose(fVol);
+
+        snprintf(ptr, len + 1, "%4s", vol);
+        *(ptr + len) = ' ';
+    }
 }
