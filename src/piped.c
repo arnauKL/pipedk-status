@@ -3,60 +3,63 @@
 #include <time.h>
 #include <unistd.h>
 
-#define NUM_MODULES (sizeof(modules) / sizeof(modules[0])) // shortcut
+#define NUM_MODULES (sizeof (modules) / sizeof (modules[0])) // shortcut
 
 // Module-updating function declarations
-void update_date(char *ptr, const int len);
-void update_time(char *ptr, const int len);
-void update_bat_level(char *ptr, const int len);
-void update_power_now(char *ptr, const int len);
-void update_volume(char *ptr, const int len);
+void update_date (char *ptr, const int len);
+void update_time (char *ptr, const int len);
+void update_bat_level (char *ptr, const int len);
+void update_power_now (char *ptr, const int len);
 
-struct module_ptr {
-    char *start;                              // Pointer to first mutable char
-    int   len;                                // Length of mutable region (len > 0)
-    void (*update)(char *ptr, const int len); // Function to update this region
+struct module_ptr
+{
+    char *start; // Pointer to first mutable char
+    int len;     // Length of mutable region (len > 0)
+    void (*update) (char *ptr,
+                    const int len); // Function to update this region
 };
 
-static char status_bar[] = " VOL: ---% | --.--W | BAT0: --% | 00/00 - 00:00 |  ";
-//                                 ^^    ^^^^^          ^^%   ^^^^^   ^^^^^
-//                        amixer vol%    power(W)    battery%  date   time
+static char status_bar[] = " --.--W | BAT0 --% | 00/00 - 00:00 |  ";
+//                           ^^^^^         ^^%   ^^^^^   ^^^^^
+//                          power(W)    battery%  date   time
 
 // Manually set, maybe some C macro could do this, idk
-#define VOL_OFFSET       6
-#define POWER_OFFSET     13
-#define BAT_LEVEL_OFFSET 28
-#define DATE_OFFSET      34
-#define TIME_OFFSET      42
+#define POWER_OFFSET     1
+#define BAT_LEVEL_OFFSET 15
+#define DATE_OFFSET      21
+#define TIME_OFFSET      29
 
 static struct module_ptr modules[] = {
     // { status_bar + padding,  n_chars, fn_pointer },
-    {status_bar + DATE_OFFSET, 5, update_date},           // "00/00"
-    {status_bar + TIME_OFFSET, 5, update_time},           // "00:00"
-    {status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level}, // "00%"
-    {status_bar + POWER_OFFSET, 5, update_power_now},     // "00.00W"
-    {status_bar + VOL_OFFSET, 4, update_volume},
+    { status_bar + DATE_OFFSET, 5, update_date },           // "00/00"
+    { status_bar + TIME_OFFSET, 5, update_time },           // "00:00"
+    { status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level }, // "00%"
+    { status_bar + POWER_OFFSET, 5, update_power_now },     // "00.00W"
 };
 
 // -------------------------------
 
 // Main
-int main() {
+int
+main ()
+{
 
-    modules[0].update(modules[0].start, modules[0].len);
+    modules[0].update (modules[0].start, modules[0].len);
 
     /* Main loop */
-    while (1) {
+    while (1)
+        {
 
-        for (int i = 1; i < NUM_MODULES; i++) {
-            modules[i].update(modules[i].start, modules[i].len);
+            for (int i = 1; i < NUM_MODULES; i++)
+                {
+                    modules[i].update (modules[i].start, modules[i].len);
+                }
+
+            printf ("%s\n", status_bar);
+
+            fflush (stdout);
+            sleep (UPDATE_INTERVAL_SECS);
         }
-
-        printf("%s\n", status_bar);
-
-        fflush(stdout);
-        sleep(UPDATE_INTERVAL_SECS);
-    }
 
     return 0;
 }
@@ -64,87 +67,80 @@ int main() {
 // -------------------------------
 
 // Module-updating function definitions (declared in piped.h)
-void update_time(char *ptr, const int len) {
+void
+update_time (char *ptr, const int len)
+{
     // Set chars for time (hour and minute)
-    time_t     now = time(NULL);
-    struct tm *t   = localtime(&now);
-    strftime(ptr, len + 1, TIME_FORMAT_STR, t);
+    time_t now = time (NULL);
+    struct tm *t = localtime (&now);
+    strftime (ptr, len + 1, TIME_FORMAT_STR, t);
 
     *(ptr + len) = ' '; // strftime adds null terminator, reomve it
 }
 
-void update_mins(char *ptr, const int len) {
+void
+update_mins (char *ptr, const int len)
+{
     // Set chars for remaining minutes in the day
-    time_t     now  = time(NULL);
-    struct tm *t    = localtime(&now);
-    int        mins = 1440 - (t->tm_hour * 60 + t->tm_min); // Find remaining mins in a day
-    sprintf(ptr, "%4d", mins);
+    time_t now = time (NULL);
+    struct tm *t = localtime (&now);
+    int mins
+        = 1440 - (t->tm_hour * 60 + t->tm_min); // Find remaining mins in a day
+    sprintf (ptr, "%4d", mins);
 
     *(ptr + len) = '\''; // sprintf adds null terminator, reomve it
 }
 
-void update_date(char *ptr, int const len) {
+void
+update_date (char *ptr, int const len)
+{
     // Set chars for date (day and month)
-    time_t     now = time(NULL);
-    struct tm *t   = localtime(&now);
-    strftime(ptr, len + 1, DATE_FORMAT_STR, t);
+    time_t now = time (NULL);
+    struct tm *t = localtime (&now);
+    strftime (ptr, len + 1, DATE_FORMAT_STR, t);
 
     *(ptr + len) = ' '; // strftime adds null terminator, reomve it
 }
 
-void update_power_now(char *ptr, const int len) {
+void
+update_power_now (char *ptr, const int len)
+{
     // Read 'power_now' file
-    FILE *fPow = fopen(WATTS_PATH, "r");
+    FILE *fPow = fopen (WATTS_PATH, "r");
 
-    if (!fPow) {
-        perror("power_now");
-        return;
-    }
-
-    unsigned long uwatts = 0;
-    fscanf(fPow, "%lu", &uwatts);
-    fclose(fPow);
-
-    double watts = uwatts / 1000000.0; // uW to W
-    snprintf(ptr, len + 1, "%5.2fW", watts);
-    *(ptr + len) = 'W';
-}
-
-void update_bat_level(char *ptr, const int len) {
-    // Read battery percentage
-    FILE *fCap = fopen(BAT0_CAPAC_PATH, "r");
-
-    if (!fCap) {
-        perror("power_now");
-        return;
-    }
-
-    int percent = 0;
-
-    fscanf(fCap, "%d", &percent);
-
-    snprintf(ptr, len + 1, "%2d", percent);
-    *(ptr + len) = '%';
-
-    fclose(fCap);
-}
-
-void update_volume(char *ptr, const int len) {
-    static int  update_counter = 1;
-    static char vol[5]         = "N/A%";
-
-    if (update_counter++ % 5 == 0) {
-
-        FILE *fVol = popen("amixer sget Master | awk -F'[][]' 'END{print $2}'", "r");
-        if (!fVol) {
-            perror("volume");
+    if (!fPow)
+        {
+            perror ("power_now");
             return;
         }
 
-        fscanf(fVol, "%s", vol);
-        pclose(fVol);
+    unsigned long uwatts = 0;
+    fscanf (fPow, "%lu", &uwatts);
+    fclose (fPow);
 
-        snprintf(ptr, len + 1, "%4s", vol);
-        *(ptr + len) = ' ';
-    }
+    double watts = uwatts / 1000000.0; // uW to W
+    snprintf (ptr, len + 1, "%5.2fW", watts);
+    *(ptr + len) = 'W';
+}
+
+void
+update_bat_level (char *ptr, const int len)
+{
+    // Read battery percentage
+    FILE *fCap = fopen (BAT0_CAPAC_PATH, "r");
+
+    if (!fCap)
+        {
+            perror ("power_now");
+            return;
+        }
+
+    int percent = 0;
+
+    fscanf (fCap, "%d", &percent);
+
+    snprintf (ptr, len + 1, "%2d", percent);
+    *(ptr + len) = '%';
+
+    fclose (fCap);
 }
