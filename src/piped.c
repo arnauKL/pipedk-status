@@ -1,4 +1,5 @@
 #include "config.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
@@ -22,6 +23,9 @@ struct module_ptr
 static char status_bar[] = " --.--W | BAT0 --% | 00/00 - 00:00 |  ";
 //                           ^^^^^         ^^%   ^^^^^   ^^^^^
 //                          power(W)    battery%  date   time
+
+#define BAT_SAMPLES 5
+static float power_samples[BAT_SAMPLES];
 
 // Manually set, maybe some C macro could do this, idk
 #define POWER_OFFSET     1
@@ -121,6 +125,7 @@ update_power_now (char *ptr, const int len)
     double watts = uwatts / 1000000.0; // uW to W
     snprintf (ptr, len + 1, "%5.2fW", watts);
     *(ptr + len) = 'W';
+    power_samples[BAT_SAMPLES - 1] = (float)watts;
 }
 
 void
@@ -143,4 +148,16 @@ update_bat_level (char *ptr, const int len)
     *(ptr + len) = '%';
 
     fclose (fCap);
+}
+
+int
+calc_battery_life (void)
+{
+    float total = 0;
+    for (int i = 0; i < BAT_SAMPLES; i++)
+        {
+            total += power_samples[i];
+        }
+
+    return total / BAT_SAMPLES;
 }
