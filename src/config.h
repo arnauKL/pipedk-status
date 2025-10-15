@@ -11,7 +11,7 @@
 
 #define NUM_MODULES (sizeof (modules) / sizeof (modules[0])) // shortcut
 
-#define UPDATE_INTERVAL_SECS 6       // Update interval in seconds
+#define UPDATE_INTERVAL_SECS 10      // Update interval in seconds
 #define DATE_FORMAT_STR      "%d/%m" // Date format string
 #define TIME_FORMAT_STR      "%H:%M" // Date format string
 
@@ -23,6 +23,7 @@
     "/sys/class/power_supply/BAT0/capacity" // Filepath to BAT0 capacity
                                             // (charge percentage)
 
-#define WATTS_PATH "/sys/class/power_supply/BAT0/power_now"
+#define POWER_NOW_PATH  "/sys/class/power_supply/BAT0/power_now"
+#define ENERGY_NOW_PATH "/sys/class/power_supply/BAT0/energy_now"
 
 #endif // !CONFIG_H_

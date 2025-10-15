@@ -11,6 +11,7 @@ void update_date (char *ptr, const int len);
 void update_time (char *ptr, const int len);
 void update_bat_level (char *ptr, const int len);
 void update_power_now (char *ptr, const int len);
+void update_energy_remaining (char *ptr, const int len);
 
 struct module_ptr
 {
@@ -20,25 +21,30 @@ struct module_ptr
                     const int len); // Function to update this region
 };
 
-static char status_bar[] = " --.--W | BAT0 --% | 00/00 - 00:00 |  ";
-//                           ^^^^^         ^^%   ^^^^^   ^^^^^
-//                          power(W)    battery%  date   time
-
-#define BAT_SAMPLES 5
-static float power_samples[BAT_SAMPLES];
+static char status_bar[] = "--.--W --.-Wh | BAT0: --% | --/-- - --:-- |  ";
+// static char status_bar[] = " --.--W | BAT0 --% | --/-- - --:-- |  ";
+//                            ^^^^^         ^^%   ^^^^^   ^^^^^
+//                           power(W)    battery%  date   time
 
 // Manually set, maybe some C macro could do this, idk
-#define POWER_OFFSET     1
-#define BAT_LEVEL_OFFSET 15
-#define DATE_OFFSET      21
-#define TIME_OFFSET      29
+// #define POWER_OFFSET     1
+// #define BAT_LEVEL_OFFSET 15
+// #define DATE_OFFSET      21
+// #define TIME_OFFSET      29
+
+#define POWER_OFFSET     0
+#define ENERGY_OFFSET    7
+#define BAT_LEVEL_OFFSET 22
+#define DATE_OFFSET      28
+#define TIME_OFFSET      36
 
 static struct module_ptr modules[] = {
     // { status_bar + padding,  n_chars, fn_pointer },
-    { status_bar + DATE_OFFSET, 5, update_date },           // "00/00"
-    { status_bar + TIME_OFFSET, 5, update_time },           // "00:00"
-    { status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level }, // "00%"
-    { status_bar + POWER_OFFSET, 5, update_power_now },     // "00.00W"
+    { status_bar + DATE_OFFSET, 5, update_date },               // "00/00"
+    { status_bar + TIME_OFFSET, 5, update_time },               // "00:00"
+    { status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level },     // "00%"
+    { status_bar + POWER_OFFSET, 5, update_power_now },         // "00.00W"
+    { status_bar + ENERGY_OFFSET, 4, update_energy_remaining }, // "00.0Wh"
 };
 
 // -------------------------------
@@ -110,7 +116,7 @@ void
 update_power_now (char *ptr, const int len)
 {
     // Read 'power_now' file
-    FILE *fPow = fopen (WATTS_PATH, "r");
+    FILE *fPow = fopen (POWER_NOW_PATH, "r");
 
     if (!fPow)
         {
@@ -125,7 +131,27 @@ update_power_now (char *ptr, const int len)
     double watts = uwatts / 1000000.0; // uW to W
     snprintf (ptr, len + 1, "%5.2fW", watts);
     *(ptr + len) = 'W';
-    power_samples[BAT_SAMPLES - 1] = (float)watts;
+}
+
+void
+update_energy_remaining (char *ptr, const int len)
+{
+    // Read 'power_now' file
+    FILE *fEnergy = fopen (ENERGY_NOW_PATH, "r");
+
+    if (!fEnergy)
+        {
+            perror ("enery file");
+            return;
+        }
+
+    unsigned long uwattsh = 0;
+    fscanf (fEnergy, "%lu", &uwattsh);
+    fclose (fEnergy);
+
+    double watts = uwattsh / 1000000.0; // uWh to Wh
+    snprintf (ptr, len + 1, "%4.1fWh", watts);
+    *(ptr + len) = 'W';
 }
 
 void
@@ -148,16 +174,4 @@ update_bat_level (char *ptr, const int len)
     *(ptr + len) = '%';
 
     fclose (fCap);
-}
-
-int
-calc_battery_life (void)
-{
-    float total = 0;
-    for (int i = 0; i < BAT_SAMPLES; i++)
-        {
-            total += power_samples[i];
-        }
-
-    return total / BAT_SAMPLES;
 }
