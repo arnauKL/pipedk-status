@@ -21,7 +21,7 @@ struct module_ptr
                     const int len); // Function to update this region
 };
 
-static char status_bar[] = "--.--W --.-Wh | BAT0: --% | --/-- - --:-- |  ";
+static char status_bar[] = " --%, --:-- ";
 // static char status_bar[] = " --.--W | BAT0 --% | --/-- - --:-- |  ";
 //                            ^^^^^         ^^%   ^^^^^   ^^^^^
 //                           power(W)    battery%  date   time
@@ -32,19 +32,16 @@ static char status_bar[] = "--.--W --.-Wh | BAT0: --% | --/-- - --:-- |  ";
 // #define DATE_OFFSET      21
 // #define TIME_OFFSET      29
 
-#define POWER_OFFSET     0
-#define ENERGY_OFFSET    7
-#define BAT_LEVEL_OFFSET 22
-#define DATE_OFFSET      28
-#define TIME_OFFSET      36
+// #define POWER_OFFSET     0
+// #define ENERGY_OFFSET    7
+#define BAT_LEVEL_OFFSET 1
+// #define DATE_OFFSET      28
+#define TIME_OFFSET 6
 
 static struct module_ptr modules[] = {
     // { status_bar + padding,  n_chars, fn_pointer },
-    { status_bar + DATE_OFFSET, 5, update_date },               // "00/00"
-    { status_bar + TIME_OFFSET, 5, update_time },               // "00:00"
-    { status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level },     // "00%"
-    { status_bar + POWER_OFFSET, 5, update_power_now },         // "00.00W"
-    { status_bar + ENERGY_OFFSET, 4, update_energy_remaining }, // "00.0Wh"
+    { status_bar + TIME_OFFSET, 5, update_time },           // "00:00"
+    { status_bar + BAT_LEVEL_OFFSET, 2, update_bat_level }, // "00%"
 };
 
 // -------------------------------
@@ -54,16 +51,11 @@ int
 main ()
 {
 
-    modules[0].update (modules[0].start, modules[0].len);
-
     /* Main loop */
     while (1)
         {
-
-            for (int i = 1; i < NUM_MODULES; i++)
-                {
-                    modules[i].update (modules[i].start, modules[i].len);
-                }
+            for (int i = 0; i < NUM_MODULES; i++)
+                modules[i].update (modules[i].start, modules[i].len);
 
             printf ("%s\n", status_bar);
 
