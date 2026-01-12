@@ -1,6 +1,6 @@
-# `pipedk`: Minimal Status Bar for Linux
+# `pipedk` status
 
-**`pipedk`** is a custom status bar program designed for [`dwl`](https://codeberg.org/dwl/dwl) (and other window managers) to minimise resource usage and learn C on linux.
+`pipedk` is a custom status bar program designed for [`dwl`](https://codeberg.org/dwl/dwl) (and other window managers) to minimise resource usage and learn C on linux.
 
 ## Motivation
 
